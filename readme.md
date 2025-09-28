@@ -1,5 +1,40 @@
 # Financial RAG Assistant
 
+```mermaid
+graph TD
+    subgraph "Offline Indexing Pipeline"
+        direction LR
+        A1[Raw Data <br/>(CSVs)] --> A2{Data Processing};
+        A2 --> A3[(ChromaDB <br/>Vector Store)];
+        A2 --> A4[(BM25 Index <br/>.pkl file)];
+    end
+
+    subgraph "Online RAG Pipeline"
+        B1[User Query] --> B2{FastAPI <br/>(app.py)};
+        B2 --> B3{1. LLM Query Analyzer};
+        B3 -- Ambiguous Intent --> B4{2a. Conversational UX <br/>(Clarification)};
+        B3 -- Comparison/Ranking Intent --> B5{2b. Entity Correction <br/>(Fuzzy Search)};
+        B5 -- Ambiguous Name --> B4;
+        B4 -- Clear Intent --> B2;
+        B5 -- Clear Intent --> B6{3. Retrieval Router};
+        B3 -- Clear Intent --> B6;
+        
+        subgraph "Retrieval Sources"
+            direction LR
+            B6 --> C1[Semantic Search <br/>(ChromaDB)];
+            B6 --> C2[Lexical Search <br/>(BM25)];
+            B6 --> C3[Structured Search <br/>(Pandas + LLM)];
+        end
+        
+        C1 & C2 & C3 --> B7[Context & Sources];
+        B7 --> B8{4. LLM Generative Responder};
+        B8 --> B9[Final Response <br/>(Markdown + Sources)];
+        B2 -.-> B9;
+    end
+
+    style A3 fill:#cde4ff,stroke:#333
+    style A4 fill:#cde4ff,stroke:#333
+```
 This project is a sophisticated Retrieval-Augmented Generation (RAG) system designed to answer financial queries. It leverages a hybrid retrieval strategy, combining lexical, semantic, and structured data search, with a conversational AI layer to handle ambiguity and provide accurate, source-cited answers. The system is exposed via a clean FastAPI interface and includes a simple web UI for interaction.
 
 ## ✨ Features
