@@ -1,7 +1,7 @@
 # Financial RAG Assistant
 
 ```mermaid
-graph TD
+graph TD;
     subgraph "Offline Indexing Pipeline"
         direction LR
         A1[Raw Data <br/>(CSVs)] --> A2{Data Processing};
