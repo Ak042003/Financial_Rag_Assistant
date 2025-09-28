@@ -1,36 +1,89 @@
 # Financial RAG Assistant
 
 ```mermaid
-graph TD
-    A[User Query] --> B{1. LLM Query Analyzer};
+---
+config:
+  layout: fixed
+---
+flowchart TD
+ subgraph PA["Pathway A: Direct Retrieval"]
+        DR1{{"Type: Definition; Entity Lookup"}}
+        RR["Retrieval Router"]
+        DB[("ChromaDB / BM25")]
+        FAG(("Final Answer"))
+  end
+ subgraph PB["Pathway B: Complex Query & Entity Correction"]
+        CQ1{{"Type: Ranking; Comparison; Hybrid Analytical"}}
+        ENC["2a. Fuzzy Name Correction"]
+        DAO{"Disambiguation Needed - Ask User"}
+        PB_RR["Retrieval Router"]
+        PDBF["Query Pandas DF / Vector DB"]
+  end
+ subgraph PC["Pathway C: Ambiguous Queries"]
+        AQ1{{"Type: Ambiguous"}}
+        CQG["2b. Generate Clarification Question"]
+        UPC(["User Provides Criteria"])
+  end
+    UQ(["User Query"]) --> LLM{"LLM Query Analyzer"}
+    DR1 --> RR
+    RR --> DB
+    DB --> FAG
+    CQ1 --> ENC
+    ENC -- Ambiguous Name --> DAO
+    DAO -- User Clarifies --> UQ
+    DAO -- Names Clear --> PB_RR
+    ENC -- Names Clear --> PB_RR
+    PB_RR --> PDBF
+    PDBF --> FAG
+    AQ1 --> CQG
+    CQG --> UPC
+    UPC --> UQ
+    FAG ---> LLM_RESP(["LLM Generative Responder"])
+    LLM_RESP ---> FM(["Final Markdown + Sources"])
+    LLM -- Type: Direct --> DR1
+    LLM -- Type: Complex --> CQ1
+    LLM -- Type: Ambiguous --> AQ1
+     DR1:::decision
+     DR1:::decision
+     RR:::process
+     RR:::process
+     DB:::data
+     DB:::data
+     FAG:::key
+     FAG:::key
+     FAG:::key
+     CQ1:::decision
+     CQ1:::decision
+     ENC:::process
+     ENC:::process
+     DAO:::decision
+     DAO:::decision
+     PB_RR:::process
+     PB_RR:::process
+     PDBF:::process
+     PDBF:::process
+     AQ1:::decision
+     AQ1:::decision
+     CQG:::process
+     CQG:::process
+     UPC:::input
+     UPC:::input
+     UQ:::input
+     UQ:::input
+     LLM:::main
+     LLM:::main
+     LLM_RESP:::main
+     LLM_RESP:::main
+     FM:::output
+     FM:::output
+    classDef main fill:#6f42c1,stroke:#fff,color:#fff,stroke-width:2px
+    classDef key fill:#28a745,stroke:#fff,color:#fff,stroke-width:2px
+    classDef output fill:#007bff,stroke:#fff,color:#fff,stroke-width:2px
+    classDef decision fill:#e0abfc,stroke:#7037a0,stroke-width:2px
+    classDef process fill:#f6f7f9,stroke:#aaa,stroke-width:1.5px
+    classDef data fill:#fffbe6,stroke:#a5a500,stroke-width:1.5px
+    classDef input fill:#e3f9ee,stroke:#348060,stroke-width:1.5px
 
-    subgraph "2. Analysis & Clarification Pathways"
-        B -- "type: ambiguous" --> C{Generate Clarification Question};
-        C --> D[User Provides Criteria];
-        D --> A;
-
-        B -- "type: comparison/ranking" --> E{Fuzzy Name Correction & Disambiguation};
-        E -- "Ambiguous Name Found" --> F{Ask User to Disambiguate};
-        F --> G[User Selects Specific Fund];
-        G --> A;
-
-        E -- "Names are Clear" --> H((Retrieval Stage));
-        B -- "type: definition/lookup" --> H;
-    end
-
-    subgraph "3. Retrieval & Generation"
-        H --> I{Retrieval Router};
-        I -- Semantic/Lexical --> J1[(Vector DB <br/> ChromaDB)];
-        I -- Lexical --> J2[(Keyword Index <br/> BM25)];
-        I -- Structured --> J3((Pandas DataFrame <br/> via LLM Generator));
-        
-        J1 & J2 & J3 --> K[Retrieved Context & Sources];
-        K --> L{4. LLM Generative Responder};
-        L --> M([Final Answer <br/> Markdown + Sources]);
-    end
-
-    style H fill:#28a745,stroke:#fff,color:#fff
-    style M fill:#007bff,stroke:#fff,color:#fff
 ```
 This project is a sophisticated Retrieval-Augmented Generation (RAG) system designed to answer financial queries. It leverages a hybrid retrieval strategy, combining lexical, semantic, and structured data search, with a conversational AI layer to handle ambiguity and provide accurate, source-cited answers. The system is exposed via a clean FastAPI interface and includes a simple web UI for interaction.
 
